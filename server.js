@@ -3,7 +3,6 @@ const WebSocket = require('ws');
 
 const port = process.env.PORT || 8080;
 
-// HTTP Server đơn giản cho Render kiểm tra trạng thái hoạt động (Health Check)
 const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('WebRTC Doorbell Signaling Server is LIVE & READY!\n');
@@ -16,8 +15,8 @@ wss.on('connection', (ws) => {
     let currentRoom = null;
 
     ws.on('message', (message, isBinary) => {
-        // 1. Nếu là dữ liệu nhị phân (Frame ảnh JPEG từ ESP32) -> Chuyển tiếp ngay, KHÔNG JSON.parse
-        if (isBinary || Buffer.isBuffer(message)) {
+        // 1. Chỉ khi isBinary === true mới là Frame ảnh JPEG -> Forward trực tiếp
+        if (isBinary) {
             if (currentRoom && rooms[currentRoom]) {
                 rooms[currentRoom].forEach((client) => {
                     if (client !== ws && client.readyState === WebSocket.OPEN) {
@@ -28,9 +27,9 @@ wss.on('connection', (ws) => {
             return;
         }
 
-        // 2. Chỉ parse JSON khi là chuỗi Text (Lệnh: join, RING, ACCEPT_CALL, OPEN_DOOR, v.v.)
+        // 2. Khi isBinary === false: Xử lý lệnh Text (join, RING, ACCEPT_CALL, OPEN_DOOR)
         try {
-            const textMsg = message.toString();
+            const textMsg = message.toString('utf-8');
             const data = JSON.parse(textMsg);
 
             if (data.type === 'join') {
@@ -51,7 +50,7 @@ wss.on('connection', (ws) => {
                 });
             }
         } catch (e) {
-            console.error('[WARN] Tin nhắn text không hợp lệ:', e.message);
+            console.error('[WARN] Lỗi parse text:', e.message);
         }
     });
 
