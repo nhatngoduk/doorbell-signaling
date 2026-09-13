@@ -1,6 +1,7 @@
 const http = require('http');
 const WebSocket = require('ws');
 
+// Render.com cap cong dong qua process.env.PORT, mac dinh 8080
 const port = process.env.PORT || 8080;
 
 const server = http.createServer((req, res) => {
@@ -8,7 +9,7 @@ const server = http.createServer((req, res) => {
     res.end('WebRTC Doorbell Signaling Server is LIVE & READY!\n');
 });
 
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({ server: server });
 const rooms = {};
 
 wss.on('connection', (ws) => {
@@ -23,7 +24,7 @@ wss.on('connection', (ws) => {
                     rooms[currentRoom] = new Set();
                 }
                 rooms[currentRoom].add(ws);
-                console.log(\[JOIN] Thiết bị đã vào phòng: \ (Tổng client: \)\);
+                console.log('[JOIN] Thiet bi da vao phong: ' + currentRoom + ' (Tong client: ' + rooms[currentRoom].size + ')');
                 return;
             }
             if (currentRoom && rooms[currentRoom]) {
@@ -47,7 +48,7 @@ wss.on('connection', (ws) => {
     ws.on('close', () => {
         if (currentRoom && rooms[currentRoom]) {
             rooms[currentRoom].delete(ws);
-            console.log(\[LEAVE] Thiết bị ngắt kết nối khỏi phòng: \);
+            console.log('[LEAVE] Thiet bi ngat ket noi khoi phong: ' + currentRoom);
             if (rooms[currentRoom].size === 0) {
                 delete rooms[currentRoom];
             }
@@ -55,13 +56,13 @@ wss.on('connection', (ws) => {
     });
 
     ws.on('error', (err) => {
-        console.error('[ERROR] Lỗi kết nối WebSocket:', err.message);
+        console.error('[ERROR] Loi ket noi WebSocket:', err.message);
     });
 });
 
 server.listen(port, () => {
     console.log('=======================================================');
-    console.log(\ Signaling Server đang hoạt động tại cổng: \);
-    console.log(' Sẵn sàng phục vụ kết nối WebRTC Doorbell!');
+    console.log(' Signaling Server dang hoat dong tai cong: ' + port);
+    console.log(' San sang phuc vu ket noi WebRTC Doorbell!');
     console.log('=======================================================');
 });
